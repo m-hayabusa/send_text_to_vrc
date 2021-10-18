@@ -45,18 +45,12 @@ const publish = function (input, output = "output.webm") {
         str += FS;
     });
     str += NUL;
-    console.log(str);
-    (0, sharp_1.default)({
-        create: {
-            width: 256,
-            height: 256,
-            channels: 3,
-            background: { r: 255, g: 255, b: 255 }
-        }
-    }).raw().toBuffer((err, data, info) => {
-        let pixArray = new Uint8ClampedArray(data.buffer);
-        for (let i = 0; i < str.length; i++) {
-            let char = str.charCodeAt(i);
+    const pageCnt = Math.ceil(str.length * 2 / (256 * 256));
+    for (let pageIttr = 0; pageIttr < pageCnt; pageIttr++) {
+        let pixArray = new Uint8ClampedArray(256 * 256 * 3);
+        pixArray.fill(255);
+        for (let i = 0; i * 2 < 256 * 256 && (i + 256 * 256 / 2 * pageIttr) < str.length; i++) {
+            let char = str.charCodeAt(i + 256 * 256 / 2 * pageIttr);
             for (let j = 0; j < 2; j++) {
                 let tmp;
                 if (j % 2 == 1)
@@ -119,17 +113,14 @@ const publish = function (input, output = "output.webm") {
         (0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp_1.default.kernel.nearest })
-            .png().toFile("./0000.png")
-            .then(() => {
-            (0, fluent_ffmpeg_1.default)()
-                .addInput("%04d.png")
-                .loop(1)
-                .videoCodec("libvpx")
-                .videoBitrate(10000)
-                .fpsOutput(1)
-                .duration(1)
-                .saveToFile(output);
-        });
-    });
+            .png().toFile(("0000" + pageIttr.toString()).slice(-4) + ".png");
+    }
+    (0, fluent_ffmpeg_1.default)()
+        .addInput("%04d.png")
+        .fpsInput(1)
+        .videoCodec("libvpx")
+        .videoBitrate(10000)
+        .fpsOutput(1)
+        .saveToFile(output);
 };
 exports.publish = publish;

@@ -45,20 +45,14 @@ export const publish = function (input: Array<File>, output: string = "output.we
     });
     str += NUL;
 
-    console.log(str);
+    const pageCnt = Math.ceil(str.length * 2 / (256 * 256));
 
-    sharp({
-        create: {
-            width: 256,
-            height: 256,
-            channels: 3,
-            background: { r: 255, g: 255, b: 255 }
-        }
-    }).raw().toBuffer((err, data, info) => {
-        let pixArray = new Uint8ClampedArray(data.buffer);
+    for (let pageIttr = 0; pageIttr < pageCnt; pageIttr++) {
+        let pixArray = new Uint8ClampedArray(256 * 256 * 3);
+        pixArray.fill(255);
 
-        for (let i = 0; i < str.length; i++) {
-            let char = str.charCodeAt(i);
+        for (let i = 0; i * 2 < 256 * 256 && (i + 256 * 256 / 2 * pageIttr) < str.length; i++) {
+            let char = str.charCodeAt(i + 256 * 256 / 2 * pageIttr);
 
             for (let j = 0; j < 2; j++) {
                 let tmp;
@@ -127,16 +121,14 @@ export const publish = function (input: Array<File>, output: string = "output.we
         sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp.kernel.nearest })
-            .png().toFile("./0000.png")
-            .then(() => {
-                ffmpeg()
-                    .addInput("%04d.png")
-                    .loop(1)
-                    .videoCodec("libvpx")
-                    .videoBitrate(10000)
-                    .fpsOutput(1)
-                    .duration(1)
-                    .saveToFile(output);
-            });
-    });
+            .png().toFile(("0000" + pageIttr.toString()).slice(-4) + ".png");
+    }
+
+    ffmpeg()
+        .addInput("%04d.png")
+        .fpsInput(1)
+        .videoCodec("libvpx")
+        .videoBitrate(10000)
+        .fpsOutput(1)
+        .saveToFile(output);
 }
