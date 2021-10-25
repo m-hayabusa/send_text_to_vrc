@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import ffmpeg from 'fluent-ffmpeg';
+import fs from "fs";
 
 export class File {
     constructor(Filename: string, Key: Array<string>) {
@@ -30,7 +31,8 @@ const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
 
-export const publish = function (input: Array<File>, output: string = "output.webm"): void {
+export const publish = function (input: Array<File>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): void {
+    const tempDir = fs.mkdtempSync(tempDirPrefix);
     let str: string = "";
 
     input.forEach(file => {
@@ -121,14 +123,16 @@ export const publish = function (input: Array<File>, output: string = "output.we
         sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp.kernel.nearest })
-            .png().toFile(("0000" + pageIttr.toString()).slice(-4) + ".png");
+            .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
     }
 
     ffmpeg()
-        .addInput("%04d.png")
+        .addInput(tempDir + "/%04d.png")
         .fpsInput(1)
         .videoCodec("libvpx")
         .videoBitrate(10000)
         .fpsOutput(1)
-        .saveToFile(output);
+        .saveToFile(outputFile).on('end', () => {
+            fs.rmSync(tempDir, { recursive: true });
+        });
 }

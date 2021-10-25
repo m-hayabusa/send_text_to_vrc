@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.publish = exports.File = void 0;
 const sharp_1 = __importDefault(require("sharp"));
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
+const fs_1 = __importDefault(require("fs"));
 class File {
     constructor(Filename, Key) {
         this.Filename = "";
@@ -32,7 +33,8 @@ const FS = String.fromCharCode(28);
 const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
-const publish = function (input, output = "output.webm") {
+const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/tmp/st2vrc") {
+    const tempDir = fs_1.default.mkdtempSync(tempDirPrefix);
     let str = "";
     input.forEach(file => {
         str += file.Filename + RS;
@@ -113,14 +115,17 @@ const publish = function (input, output = "output.webm") {
         (0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp_1.default.kernel.nearest })
-            .png().toFile(("0000" + pageIttr.toString()).slice(-4) + ".png");
+            .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
     }
+    console.log(tempDir);
     (0, fluent_ffmpeg_1.default)()
-        .addInput("%04d.png")
+        .addInput(tempDir + "/%04d.png")
         .fpsInput(1)
         .videoCodec("libvpx")
         .videoBitrate(10000)
         .fpsOutput(1)
-        .saveToFile(output);
+        .saveToFile(outputFile).on('end', () => {
+        fs_1.default.rmSync(tempDir, { recursive: true });
+    });
 };
 exports.publish = publish;

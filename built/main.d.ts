@@ -6,4 +6,4 @@ export declare class File {
     setKey(input: Array<string>): void;
     push(input: Array<string>): File;
 }
-export declare const publish: (input: Array<File>, output?: string) => void;
+export declare const publish: (input: Array<File>, outputFile?: string, tempDirPrefix?: string) => void;
