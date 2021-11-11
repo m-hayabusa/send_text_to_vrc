@@ -31,7 +31,7 @@ const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
 
-export const publish = function (input: Array<File>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): void {
+export const publish = async function (input: Array<File>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
     const tempDir = fs.mkdtempSync(tempDirPrefix);
     let str: string = "";
 
@@ -120,19 +120,26 @@ export const publish = function (input: Array<File>, outputFile: string = "outpu
             }
         }
 
-        sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
+        await sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp.kernel.nearest })
             .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
     }
 
-    ffmpeg()
-        .addInput(tempDir + "/%04d.png")
-        .fpsInput(1)
-        .videoCodec("libvpx")
-        .videoBitrate(10000)
-        .fpsOutput(1)
-        .saveToFile(outputFile).on('end', () => {
-            fs.rmSync(tempDir, { recursive: true });
-        });
+    return new Promise<void>((resolve, reject) => {
+        ffmpeg()
+            .addInput(tempDir + "/%04d.png")
+            .fpsInput(1)
+            .videoCodec("libvpx")
+            .videoBitrate(10000)
+            .fpsOutput(1)
+            .saveToFile(outputFile)
+            .on('end', () => {
+                fs.rmSync(tempDir, { recursive: true });
+                resolve();
+            })
+            .on('error', (err) => {
+                reject(err);
+            })
+    })
 }
