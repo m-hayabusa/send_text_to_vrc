@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -34,98 +43,106 @@ const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
 const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/tmp/st2vrc") {
-    const tempDir = fs_1.default.mkdtempSync(tempDirPrefix);
-    let str = "";
-    input.forEach(file => {
-        str += file.Filename + RS;
-        str += file.Data.length + RS;
-        str += file.Key.join(US) + RS;
-        str += GS; // ここまでヘッダ
-        file.Data.forEach(row => {
-            str += row.join(US) + RS;
+    return __awaiter(this, void 0, void 0, function* () {
+        const tempDir = fs_1.default.mkdtempSync(tempDirPrefix);
+        let str = "";
+        input.forEach(file => {
+            str += file.Filename + RS;
+            str += file.Data.length + RS;
+            str += file.Key.join(US) + RS;
+            str += GS; // ここまでヘッダ
+            file.Data.forEach(row => {
+                str += row.join(US) + RS;
+            });
+            str += FS;
         });
-        str += FS;
-    });
-    str += NUL;
-    const pageCnt = Math.ceil(str.length * 2 / (256 * 256));
-    for (let pageIttr = 0; pageIttr < pageCnt; pageIttr++) {
-        let pixArray = new Uint8ClampedArray(256 * 256 * 3);
-        pixArray.fill(255);
-        for (let i = 0; i * 2 < 256 * 256 && (i + 256 * 256 / 2 * pageIttr) < str.length; i++) {
-            let char = str.charCodeAt(i + 256 * 256 / 2 * pageIttr);
-            for (let j = 0; j < 2; j++) {
-                let tmp;
-                if (j % 2 == 1)
-                    tmp = char & 0x00FF;
-                else
-                    tmp = (char & 0xFF00) >> 8;
-                // R
-                if (((tmp >> 0) & 0b111) == 0b000)
-                    pixArray[i * 6 + j * 3 + 0] = (0.125 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b001)
-                    pixArray[i * 6 + j * 3 + 0] = (0.250 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b010)
-                    pixArray[i * 6 + j * 3 + 0] = (0.375 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b011)
-                    pixArray[i * 6 + j * 3 + 0] = (0.500 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b100)
-                    pixArray[i * 6 + j * 3 + 0] = (0.625 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b101)
-                    pixArray[i * 6 + j * 3 + 0] = (0.750 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b110)
-                    pixArray[i * 6 + j * 3 + 0] = (0.875 - 0.0625) * 256;
-                else if (((tmp >> 0) & 0b111) == 0b111)
-                    pixArray[i * 6 + j * 3 + 0] = (1.000) * 256;
-                // G
-                if (((tmp >> 3) & 0b111) == 0b000)
-                    pixArray[i * 6 + j * 3 + 1] = (0.125 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b001)
-                    pixArray[i * 6 + j * 3 + 1] = (0.250 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b010)
-                    pixArray[i * 6 + j * 3 + 1] = (0.375 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b011)
-                    pixArray[i * 6 + j * 3 + 1] = (0.500 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b100)
-                    pixArray[i * 6 + j * 3 + 1] = (0.625 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b101)
-                    pixArray[i * 6 + j * 3 + 1] = (0.750 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b110)
-                    pixArray[i * 6 + j * 3 + 1] = (0.875 - 0.0625) * 256;
-                else if (((tmp >> 3) & 0b111) == 0b111)
-                    pixArray[i * 6 + j * 3 + 1] = (1.000) * 256;
-                // B
-                if (((tmp >> 6) & 0b11) == 0b00)
-                    pixArray[i * 6 + j * 3 + 2] = (0.125 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b01)
-                    pixArray[i * 6 + j * 3 + 2] = (0.250 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b10)
-                    pixArray[i * 6 + j * 3 + 2] = (0.375 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b11)
-                    pixArray[i * 6 + j * 3 + 2] = (0.500 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b00)
-                    pixArray[i * 6 + j * 3 + 2] = (0.625 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b01)
-                    pixArray[i * 6 + j * 3 + 2] = (0.750 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b10)
-                    pixArray[i * 6 + j * 3 + 2] = (0.875 - 0.0625) * 256;
-                else if (((tmp >> 6) & 0b11) == 0b11)
-                    pixArray[i * 6 + j * 3 + 2] = (1.000) * 256;
+        str += NUL;
+        const pageCnt = Math.ceil(str.length * 2 / (256 * 256));
+        for (let pageIttr = 0; pageIttr < pageCnt; pageIttr++) {
+            let pixArray = new Uint8ClampedArray(256 * 256 * 3);
+            pixArray.fill(255);
+            for (let i = 0; i * 2 < 256 * 256 && (i + 256 * 256 / 2 * pageIttr) < str.length; i++) {
+                let char = str.charCodeAt(i + 256 * 256 / 2 * pageIttr);
+                for (let j = 0; j < 2; j++) {
+                    let tmp;
+                    if (j % 2 == 1)
+                        tmp = char & 0x00FF;
+                    else
+                        tmp = (char & 0xFF00) >> 8;
+                    // R
+                    if (((tmp >> 0) & 0b111) == 0b000)
+                        pixArray[i * 6 + j * 3 + 0] = (0.125 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b001)
+                        pixArray[i * 6 + j * 3 + 0] = (0.250 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b010)
+                        pixArray[i * 6 + j * 3 + 0] = (0.375 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b011)
+                        pixArray[i * 6 + j * 3 + 0] = (0.500 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b100)
+                        pixArray[i * 6 + j * 3 + 0] = (0.625 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b101)
+                        pixArray[i * 6 + j * 3 + 0] = (0.750 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b110)
+                        pixArray[i * 6 + j * 3 + 0] = (0.875 - 0.0625) * 256;
+                    else if (((tmp >> 0) & 0b111) == 0b111)
+                        pixArray[i * 6 + j * 3 + 0] = (1.000) * 256;
+                    // G
+                    if (((tmp >> 3) & 0b111) == 0b000)
+                        pixArray[i * 6 + j * 3 + 1] = (0.125 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b001)
+                        pixArray[i * 6 + j * 3 + 1] = (0.250 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b010)
+                        pixArray[i * 6 + j * 3 + 1] = (0.375 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b011)
+                        pixArray[i * 6 + j * 3 + 1] = (0.500 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b100)
+                        pixArray[i * 6 + j * 3 + 1] = (0.625 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b101)
+                        pixArray[i * 6 + j * 3 + 1] = (0.750 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b110)
+                        pixArray[i * 6 + j * 3 + 1] = (0.875 - 0.0625) * 256;
+                    else if (((tmp >> 3) & 0b111) == 0b111)
+                        pixArray[i * 6 + j * 3 + 1] = (1.000) * 256;
+                    // B
+                    if (((tmp >> 6) & 0b11) == 0b00)
+                        pixArray[i * 6 + j * 3 + 2] = (0.125 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b01)
+                        pixArray[i * 6 + j * 3 + 2] = (0.250 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b10)
+                        pixArray[i * 6 + j * 3 + 2] = (0.375 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b11)
+                        pixArray[i * 6 + j * 3 + 2] = (0.500 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b00)
+                        pixArray[i * 6 + j * 3 + 2] = (0.625 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b01)
+                        pixArray[i * 6 + j * 3 + 2] = (0.750 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b10)
+                        pixArray[i * 6 + j * 3 + 2] = (0.875 - 0.0625) * 256;
+                    else if (((tmp >> 6) & 0b11) == 0b11)
+                        pixArray[i * 6 + j * 3 + 2] = (1.000) * 256;
+                }
             }
+            yield (0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
+                .rotate(-90)
+                .resize({ width: 1024, height: 1024, kernel: sharp_1.default.kernel.nearest })
+                .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
         }
-        (0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
-            .rotate(-90)
-            .resize({ width: 1024, height: 1024, kernel: sharp_1.default.kernel.nearest })
-            .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
-    }
-    console.log(tempDir);
-    (0, fluent_ffmpeg_1.default)()
-        .addInput(tempDir + "/%04d.png")
-        .fpsInput(1)
-        .videoCodec("libvpx")
-        .videoBitrate(10000)
-        .fpsOutput(1)
-        .saveToFile(outputFile).on('end', () => {
-        fs_1.default.rmSync(tempDir, { recursive: true });
+        return new Promise((resolve, reject) => {
+            (0, fluent_ffmpeg_1.default)()
+                .addInput(tempDir + "/%04d.png")
+                .fpsInput(1)
+                .videoCodec("libvpx")
+                .videoBitrate(10000)
+                .fpsOutput(1)
+                .saveToFile(outputFile)
+                .on('end', () => {
+                fs_1.default.rmSync(tempDir, { recursive: true });
+                resolve();
+            })
+                .on('error', (err) => {
+                reject(err);
+            });
+        });
     });
 };
 exports.publish = publish;
