@@ -1,6 +1,6 @@
 {
   "name": "send_text_to_vrc",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "built/main.js",
   "author": "m-hayabusa",
   "license": "MIT",
