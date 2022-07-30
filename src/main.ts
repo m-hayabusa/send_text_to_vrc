@@ -47,6 +47,17 @@ export const publish = async function (input: Array<File>, outputFile: string = 
     });
     str += NUL;
 
+    if (process.env.NODE_ENV && process.env.NODE_ENV === "development") {
+        console.log(
+            str
+                .replace(/\n/g, "\\n")
+                .replace(new RegExp(FS, 'g'), '\n========================================\n')
+                .replace(new RegExp(GS, 'g'), '\n----------------------------------------\n')
+                .replace(new RegExp(RS, 'g'), '\n')
+                .replace(new RegExp(US, 'g'), ' | ')
+        )
+    }
+
     const pageCnt = Math.ceil(str.length * 2 / (256 * 256));
 
     for (let pageIttr = 0; pageIttr < pageCnt; pageIttr++) {
