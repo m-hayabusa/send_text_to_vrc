@@ -34,6 +34,7 @@ const US = String.fromCharCode(31);
 export const publish = async function (input: Array<File>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
     const tempDir = fs.mkdtempSync(tempDirPrefix);
     let str: string = "";
+    let promises: Array<Promise<any>> = [];
 
     input.forEach(file => {
         str += file.Filename + RS;
@@ -131,26 +132,31 @@ export const publish = async function (input: Array<File>, outputFile: string = 
             }
         }
 
-        await sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
+        promises.push(sharp(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
             .rotate(-90)
             .resize({ width: 1024, height: 1024, kernel: sharp.kernel.nearest })
-            .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
+            .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png")
+        );
     }
 
     return new Promise<void>((resolve, reject) => {
-        ffmpeg()
-            .addInput(tempDir + "/%04d.png")
-            .fpsInput(1)
-            .videoCodec("libvpx")
-            .videoBitrate(10000)
-            .fpsOutput(1)
-            .saveToFile(outputFile)
-            .on('end', () => {
-                fs.rmSync(tempDir, { recursive: true });
-                resolve();
-            })
-            .on('error', (err) => {
-                reject(err);
-            })
-    })
+        Promise.all(promises).then(() => {
+            ffmpeg()
+                .addInput(tempDir + "/%*.png")
+                .fpsInput(1)
+                .videoCodec("libvpx")
+                .videoBitrate(10000)
+                .fpsOutput(1)
+                .saveToFile(outputFile)
+                .on('end', () => {
+                    fs.rmSync(tempDir, { recursive: true });
+                    resolve();
+                })
+                .on('error', (err) => {
+                    reject(err);
+                })
+        }).catch((e) => {
+            reject(e);
+        })
+    });
 }

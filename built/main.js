@@ -46,6 +46,7 @@ const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/t
     return __awaiter(this, void 0, void 0, function* () {
         const tempDir = fs_1.default.mkdtempSync(tempDirPrefix);
         let str = "";
+        let promises = [];
         input.forEach(file => {
             str += file.Filename + RS;
             str += file.Data.length + RS;
@@ -130,25 +131,29 @@ const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/t
                         pixArray[i * 6 + j * 3 + 2] = (1.000) * 256;
                 }
             }
-            yield (0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
+            promises.push((0, sharp_1.default)(pixArray, { raw: { width: 256, height: 256, channels: 3 } })
                 .rotate(-90)
                 .resize({ width: 1024, height: 1024, kernel: sharp_1.default.kernel.nearest })
-                .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png");
+                .png().toFile(tempDir + "/" + ("0000" + pageIttr.toString()).slice(-4) + ".png"));
         }
         return new Promise((resolve, reject) => {
-            (0, fluent_ffmpeg_1.default)()
-                .addInput(tempDir + "/%04d.png")
-                .fpsInput(1)
-                .videoCodec("libvpx")
-                .videoBitrate(10000)
-                .fpsOutput(1)
-                .saveToFile(outputFile)
-                .on('end', () => {
-                fs_1.default.rmSync(tempDir, { recursive: true });
-                resolve();
-            })
-                .on('error', (err) => {
-                reject(err);
+            Promise.all(promises).then(() => {
+                (0, fluent_ffmpeg_1.default)()
+                    .addInput(tempDir + "/%*.png")
+                    .fpsInput(1)
+                    .videoCodec("libvpx")
+                    .videoBitrate(10000)
+                    .fpsOutput(1)
+                    .saveToFile(outputFile)
+                    .on('end', () => {
+                    fs_1.default.rmSync(tempDir, { recursive: true });
+                    resolve();
+                })
+                    .on('error', (err) => {
+                    reject(err);
+                });
+            }).catch((e) => {
+                reject(e);
             });
         });
     });
