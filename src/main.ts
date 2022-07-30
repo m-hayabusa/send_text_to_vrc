@@ -25,18 +25,59 @@ export class File {
     }
 }
 
+export class Images {
+    constructor(filename: string) {
+        this.filename = filename;
+    }
+
+    private filename: string;
+
+    // private file: File;
+    private file: Array<{ fileName: string, filePath: string }> = [];
+
+    push(fileName: string, filePath: string) {
+        this.file.push({ fileName: fileName, filePath: filePath });
+        // this.fileList.push(filePath);
+    }
+
+    // private fileList: Array<string> = [];
+
+    publish(tempDir: string, offset: number) {
+        const res = new File(this.filename, ["filename", "frame"]);
+
+        for (let i = 0; i < this.file.length; i++) {
+            res.push([this.file[i].fileName, (-i - offset).toFixed()]);
+
+            sharp(this.file[i].filePath)
+                .resize({ width: 1024, height: 1024 })
+                .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png");
+        }
+
+        return {
+            file: res,
+            nextOffset: (offset + this.file.length + 1)
+        };
+    }
+}
+
 const NUL = String.fromCharCode(0);
 const FS = String.fromCharCode(28);
 const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
 
-export const publish = async function (input: Array<File>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
+export const publish = async function (input: Array<File | Images>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
     const tempDir = fs.mkdtempSync(tempDirPrefix);
     let str: string = "";
     let promises: Array<Promise<any>> = [];
+    let imageOffset = 0;
 
     input.forEach(file => {
+        if (file instanceof Images) {
+            let t = file.publish(tempDir, imageOffset);
+            file = t.file;
+            imageOffset = t.nextOffset;
+        }
         str += file.Filename + RS;
         str += file.Data.length + RS;
         str += file.Key.join(US) + RS;

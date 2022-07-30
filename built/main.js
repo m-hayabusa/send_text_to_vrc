@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.publish = exports.File = void 0;
+exports.publish = exports.Images = exports.File = void 0;
 const sharp_1 = __importDefault(require("sharp"));
 const fluent_ffmpeg_1 = __importDefault(require("fluent-ffmpeg"));
 const fs_1 = __importDefault(require("fs"));
@@ -37,6 +37,32 @@ class File {
     }
 }
 exports.File = File;
+class Images {
+    constructor(filename) {
+        // private file: File;
+        this.file = [];
+        this.filename = filename;
+    }
+    push(fileName, filePath) {
+        this.file.push({ fileName: fileName, filePath: filePath });
+        // this.fileList.push(filePath);
+    }
+    // private fileList: Array<string> = [];
+    publish(tempDir, offset) {
+        const res = new File(this.filename, ["filename", "frame"]);
+        for (let i = 0; i < this.file.length; i++) {
+            res.push([this.file[i].fileName, (-i - offset).toFixed()]);
+            (0, sharp_1.default)(this.file[i].filePath)
+                .resize({ width: 1024, height: 1024 })
+                .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png");
+        }
+        return {
+            file: res,
+            nextOffset: (offset + this.file.length + 1)
+        };
+    }
+}
+exports.Images = Images;
 const NUL = String.fromCharCode(0);
 const FS = String.fromCharCode(28);
 const GS = String.fromCharCode(29);
@@ -47,7 +73,13 @@ const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/t
         const tempDir = fs_1.default.mkdtempSync(tempDirPrefix);
         let str = "";
         let promises = [];
+        let imageOffset = 0;
         input.forEach(file => {
+            if (file instanceof Images) {
+                let t = file.publish(tempDir, imageOffset);
+                file = t.file;
+                imageOffset = t.nextOffset;
+            }
             str += file.Filename + RS;
             str += file.Data.length + RS;
             str += file.Key.join(US) + RS;
