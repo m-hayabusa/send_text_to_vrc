@@ -2,6 +2,8 @@ import sharp from "sharp";
 import ffmpeg from 'fluent-ffmpeg';
 import fs from "fs";
 
+export type FileLike = File | Images;
+
 export class File {
     constructor(Filename: string, Key: Array<string>) {
         this.Filename = Filename;
@@ -66,7 +68,7 @@ const GS = String.fromCharCode(29);
 const RS = String.fromCharCode(30);
 const US = String.fromCharCode(31);
 
-export const publish = async function (input: Array<File | Images>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
+export const publish = async function (input: Array<FileLike>, outputFile: string = "output.webm", tempDirPrefix: string = "/tmp/st2vrc"): Promise<void> {
     const tempDir = fs.mkdtempSync(tempDirPrefix);
     let str: string = "";
     let promises: Array<Promise<any>> = [];

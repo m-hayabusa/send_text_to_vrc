@@ -16,4 +16,4 @@ export declare class Images {
         nextOffset: number;
     };
 }
-export declare const publish: (input: Array<File | Images>, outputFile?: string, tempDirPrefix?: string) => Promise<void>;
+export declare const publish: (input: Array<FileLike>, outputFile?: string, tempDirPrefix?: string) => Promise<void>;
