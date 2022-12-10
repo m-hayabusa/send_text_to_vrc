@@ -44,16 +44,23 @@ export class Images {
 
     // private fileList: Array<string> = [];
 
-    publish(tempDir: string, offset: number) {
-        const res = new File(this.filename, ["filename", "frame"]);
+    async publish(tempDir: string, offset: number) {
+        const promises: Array<Promise<any>> = [];
+
+        const res = new File(this.filename, ["filename", "frame", "height", "width"]);
 
         for (let i = 0; i < this.file.length; i++) {
-            res.push([this.file[i].fileName, (-i - offset).toFixed()]);
+            const file = sharp(this.file[i].filePath);
+            const metadata = await file.metadata();
 
-            sharp(this.file[i].filePath)
-                .resize({ width: 1024, height: 1024 })
-                .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png");
+            res.push([this.file[i].fileName, (-i - offset).toFixed(), `${metadata.height}`, `${metadata.width}`]);
+
+            promises.push(file
+                .resize({ width: 1024, height: 1024, fit: "fill" })
+                .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png"));
         }
+
+        await Promise.all(promises);
 
         return {
             file: res,
@@ -74,9 +81,10 @@ export const publish = async function (input: Array<FileLike>, outputFile: strin
     let promises: Array<Promise<any>> = [];
     let imageOffset = 0;
 
-    input.forEach(file => {
+    for (let i = 0; input.length > i; i++) {
+        let file = input[i];
         if (file instanceof Images) {
-            let t = file.publish(tempDir, imageOffset);
+            let t = await file.publish(tempDir, imageOffset);
             file = t.file;
             imageOffset = t.nextOffset;
         }
@@ -88,7 +96,8 @@ export const publish = async function (input: Array<FileLike>, outputFile: strin
             str += row.join(US) + RS;
         });
         str += FS;
-    });
+    }
+
     str += NUL;
 
     if (process.env.NODE_ENV && process.env.NODE_ENV === "development") {

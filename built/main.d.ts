@@ -1,3 +1,4 @@
+export declare type FileLike = File | Images;
 export declare class File {
     constructor(Filename: string, Key: Array<string>);
     Filename: string;
@@ -11,9 +12,9 @@ export declare class Images {
     private filename;
     private file;
     push(fileName: string, filePath: string): void;
-    publish(tempDir: string, offset: number): {
+    publish(tempDir: string, offset: number): Promise<{
         file: File;
         nextOffset: number;
-    };
+    }>;
 }
 export declare const publish: (input: Array<FileLike>, outputFile?: string, tempDirPrefix?: string) => Promise<void>;

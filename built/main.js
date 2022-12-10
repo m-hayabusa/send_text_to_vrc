@@ -49,17 +49,23 @@ class Images {
     }
     // private fileList: Array<string> = [];
     publish(tempDir, offset) {
-        const res = new File(this.filename, ["filename", "frame"]);
-        for (let i = 0; i < this.file.length; i++) {
-            res.push([this.file[i].fileName, (-i - offset).toFixed()]);
-            (0, sharp_1.default)(this.file[i].filePath)
-                .resize({ width: 1024, height: 1024 })
-                .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png");
-        }
-        return {
-            file: res,
-            nextOffset: (offset + this.file.length + 1)
-        };
+        return __awaiter(this, void 0, void 0, function* () {
+            const promises = [];
+            const res = new File(this.filename, ["filename", "frame", "height", "width"]);
+            for (let i = 0; i < this.file.length; i++) {
+                const file = (0, sharp_1.default)(this.file[i].filePath);
+                const metadata = yield file.metadata();
+                res.push([this.file[i].fileName, (-i - offset).toFixed(), `${metadata.height}`, `${metadata.width}`]);
+                promises.push(file
+                    .resize({ width: 1024, height: 1024, fit: "fill" })
+                    .png().toFile(tempDir + "/" + ("0000" + (9999 - i - offset).toString()).slice(-4) + ".png"));
+            }
+            yield Promise.all(promises);
+            return {
+                file: res,
+                nextOffset: (offset + this.file.length + 1)
+            };
+        });
     }
 }
 exports.Images = Images;
@@ -74,9 +80,10 @@ const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/t
         let str = "";
         let promises = [];
         let imageOffset = 0;
-        input.forEach(file => {
+        for (let i = 0; input.length > i; i++) {
+            let file = input[i];
             if (file instanceof Images) {
-                let t = file.publish(tempDir, imageOffset);
+                let t = yield file.publish(tempDir, imageOffset);
                 file = t.file;
                 imageOffset = t.nextOffset;
             }
@@ -88,7 +95,7 @@ const publish = function (input, outputFile = "output.webm", tempDirPrefix = "/t
                 str += row.join(US) + RS;
             });
             str += FS;
-        });
+        }
         str += NUL;
         if (process.env.NODE_ENV && process.env.NODE_ENV === "development") {
             console.log(str
